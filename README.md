@@ -21,8 +21,7 @@ WildGeo是Wilddog的一个轻量级附加组件，为了保证简单性，它用
 ### 整合WildGeo到java或android项目
 
 你需要引入[Wilddog Java SDK](https://www.wilddog.com/download/#android)
-
-### Maven
+#### Maven
 
 添加wildgeo依赖
 
@@ -34,7 +33,7 @@ WildGeo是Wilddog的一个轻量级附加组件，为了保证简单性，它用
 </dependency>
 ```
 
-### Gradle
+#### Gradle
 
 添加依赖到 `gradle.build`
 
@@ -44,11 +43,11 @@ dependencies {
 }
 ```
 
-### Jar-File
+#### Jar-File
 
  [下载页面](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22wildgeo%22).
 
-###入门
+### 入门
 
 WildGeo使用野狗数据库，你可以从这里
 [注册](https://www.wilddog.com/my-account/signup)一个免费体验账号。
