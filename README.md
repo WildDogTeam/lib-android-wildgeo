@@ -18,7 +18,7 @@ WildGeo是Wilddog的一个轻量级附加组件，为了保证简单性，它用
 后来你想增加一个查询附近酒吧的功能，WildGeo也许刚好适合。你可以用wildgeo存储地理信息，酒吧id作为健值，WildGeo
 可以查询附近的酒吧Id,然后再获取酒吧的相关信息。
 
-## 整合WildGeo到java或android项目
+### 整合WildGeo到java或android项目
 
 你需要引入[Wilddog Java SDK](https://www.wilddog.com/download/#android)
 
@@ -167,6 +167,10 @@ geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
 
 `GeoQuery`查询区域可以通过`setCenter` 和 `setRadius`改变，在变化过程中Key exited 和 key entered events将会被触发，但是移动事件是独立触发的。
 当用户的视角切换后，更新查询到可见区域是很有用的。
+
+### 更多示例
+
+这里分类汇总了 WildDog平台上的示例程序和开源应用，　链接地址：[https://github.com/WildDogTeam/wilddog-demos](https://github.com/WildDogTeam/wilddog-demos)
 
 ### 支持
 如果在使用过程中有任何问题，请提 [issue](https://github.com/WildDogTeam/lib-android-wildgeo/issues) ，我会在 Github 上给予帮助。
