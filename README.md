@@ -160,6 +160,7 @@ geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
         System.err.println("There was an error with this query: " + error);
     }
 });
+```
 `removeGeoQueryEventListener`和`removeAllListeners`可以移除`GeoQuery`的监听事件。
 
 #### Updating the query criteria
