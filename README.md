@@ -1,4 +1,4 @@
-# WildGeo for Android/Java — Realtime location queries with Wilddog
+# WildGeo 实时位置查询Java lib库
 
 WildGeo是基于地理位存储和查询的java lib库，它可以实时的查询指定地理位置的的周边信息。
 
