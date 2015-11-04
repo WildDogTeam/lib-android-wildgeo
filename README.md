@@ -74,7 +74,7 @@ wildgeo.setLocation("wildgeo-hq", new GeoLocation(37.7853889, -122.4056973));
 ```java
 wildgeo.setLocation("wilddog-hq", new GeoLocation(37.7853889, -122.4056973), new WildGeo.CompletionListener() {
     @Override
-    public void onComplete(String key, WildGeoError error) {
+    public void onComplete(String key, WilddogError error) {
         if (error != null) {
             System.err.println("There was an error saving the location to wildgeo: " + error);
         } else {
