@@ -176,7 +176,7 @@ geoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
 
 ### 相关文档
 
-* [Wilddog 概览](https://z.wilddog.com/overview/guide)
+* [Wilddog 概览](https://z.wilddog.com/overview/introduction)
 * [Java SDK快速入门](https://z.wilddog.com/android/quickstart)
 * [Java SDK API](https://z.wilddog.com/android/api)
 * [下载页面](https://www.wilddog.com/download/)
