@@ -28,7 +28,7 @@
 
 package com.wilddog.wildgeo;
 
-import com.wilddog.client.WilddogError;
+import com.wilddog.client.SyncError;
 
 /**
  * Classes implementing this interface can be used to receive the locations stored in WildGeo.
@@ -47,6 +47,6 @@ public interface LocationCallback {
      * Called if the callback could not be added due to failure on the server or security rules.
      * @param wilddogError The error that occurred
      */
-    public void onCancelled(WilddogError wilddogError);
+    public void onCancelled(SyncError wilddogError);
 
 }

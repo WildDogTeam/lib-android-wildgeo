@@ -28,12 +28,21 @@
 
 package com.wilddog.wildgeo;
 
-import com.wilddog.client.*;
+import com.wilddog.client.ChildEventListener;
+import com.wilddog.client.DataSnapshot;
+import com.wilddog.client.Query;
+import com.wilddog.client.SyncError;
+import com.wilddog.client.SyncReference;
+import com.wilddog.client.ValueEventListener;
 import com.wilddog.wildgeo.core.GeoHash;
 import com.wilddog.wildgeo.core.GeoHashQuery;
 import com.wilddog.wildgeo.util.GeoUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * A GeoQuery object can be used for geo queries in a given circle. The GeoQuery class is thread safe.
@@ -80,7 +89,7 @@ public class GeoQuery {
         }
 
         @Override
-        public synchronized void onCancelled(WilddogError wilddogError) {
+        public synchronized void onCancelled(SyncError syncError) {
             // ignore, our API does not support onCancelled
         }
     };
@@ -111,11 +120,6 @@ public class GeoQuery {
         return GeoUtils.distance(location, center) <= this.radius;
     }
 
-    private void postEvent(Runnable r) {
-        EventTarget target = Wilddog.getDefaultConfig().getEventTarget();
-        target.postEvent(r);
-    }
-
     private void updateLocationInfo(final String key, final GeoLocation location) {
         LocationInfo oldInfo = this.locationInfos.get(key);
         boolean isNew = (oldInfo == null);
@@ -125,7 +129,7 @@ public class GeoQuery {
         boolean isInQuery = this.locationIsInQuery(location);
         if ((isNew || !wasInQuery) && isInQuery) {
             for (final GeoQueryEventListener listener: this.eventListeners) {
-                postEvent(new Runnable() {
+                this.wildGeo.raiseEvent(new Runnable() {
                     @Override
                     public void run() {
                         listener.onKeyEntered(key, location);
@@ -134,7 +138,7 @@ public class GeoQuery {
             }
         } else if (!isNew && changedLocation && isInQuery) {
             for (final GeoQueryEventListener listener: this.eventListeners) {
-                postEvent(new Runnable() {
+                this.wildGeo.raiseEvent(new Runnable() {
                     @Override
                     public void run() {
                         listener.onKeyMoved(key, location);
@@ -143,7 +147,7 @@ public class GeoQuery {
             }
         } else if (wasInQuery && !isInQuery) {
             for (final GeoQueryEventListener listener: this.eventListeners) {
-                postEvent(new Runnable() {
+                this.wildGeo.raiseEvent(new Runnable() {
                     @Override
                     public void run() {
                         listener.onKeyExited(key);
@@ -188,7 +192,7 @@ public class GeoQuery {
     private void checkAndFireReady() {
         if (canFireReady()) {
             for (final GeoQueryEventListener listener: this.eventListeners) {
-                postEvent(new Runnable() {
+                this.wildGeo.raiseEvent(new Runnable() {
                     @Override
                     public void run() {
                         listener.onGeoQueryReady();
@@ -209,13 +213,13 @@ public class GeoQuery {
             }
 
             @Override
-            public void onCancelled(final WilddogError wilddogError) {
+            public void onCancelled(final SyncError syncError) {
                 synchronized (GeoQuery.this) {
                     for (final GeoQueryEventListener listener : GeoQuery.this.eventListeners) {
-                        postEvent(new Runnable() {
+                        GeoQuery.this.wildGeo.raiseEvent(new Runnable() {
                             @Override
                             public void run() {
-                                listener.onGeoQueryError(wilddogError);
+                                listener.onGeoQueryError(syncError);
                             }
                         });
                     }
@@ -238,8 +242,8 @@ public class GeoQuery {
         for (final GeoHashQuery query: newQueries) {
             if (!oldQueries.contains(query)) {
                 outstandingQueries.add(query);
-                Wilddog wilddog = this.wildGeo.getWilddog();
-                Query wilddogQuery = wilddog.orderByChild("g").startAt(query.getStartValue()).endAt(query.getEndValue());
+                SyncReference syncReference = this.wildGeo.getSyncReference();
+                Query wilddogQuery = syncReference.orderByChild("g").startAt(query.getStartValue()).endAt(query.getEndValue());
                 wilddogQuery.addChildEventListener(this.childEventLister);
                 addValueToReadyListener(wilddogQuery, query);
                 wilddogQueries.put(query, wilddogQuery);
@@ -294,7 +298,7 @@ public class GeoQuery {
                             GeoQuery.this.locationInfos.remove(key);
                             if (info != null && info.inGeoQuery) {
                                 for (final GeoQueryEventListener listener: GeoQuery.this.eventListeners) {
-                                    postEvent(new Runnable() {
+                                    GeoQuery.this.wildGeo.raiseEvent(new Runnable() {
                                         @Override
                                         public void run() {
                                             listener.onKeyExited(key);
@@ -307,7 +311,7 @@ public class GeoQuery {
                 }
 
                 @Override
-                public void onCancelled(WilddogError wilddogError) {
+                public void onCancelled(SyncError syncError) {
                     // tough luck
                 }
             });
@@ -317,7 +321,7 @@ public class GeoQuery {
     /**
      * Adds a new GeoQueryEventListener to this GeoQuery.
      *
-     * @throws java.lang.IllegalArgumentException If this listener was already added
+     * @throws IllegalArgumentException If this listener was already added
      *
      * @param listener The listener to add
      */
@@ -333,7 +337,7 @@ public class GeoQuery {
                 final String key = entry.getKey();
                 final LocationInfo info = entry.getValue();
                 if (info.inGeoQuery) {
-                    postEvent(new Runnable() {
+                    this.wildGeo.raiseEvent(new Runnable() {
                         @Override
                         public void run() {
                             listener.onKeyEntered(key, info.location);
@@ -342,7 +346,7 @@ public class GeoQuery {
                 }
             }
             if (this.canFireReady()) {
-                postEvent(new Runnable() {
+                this.wildGeo.raiseEvent(new Runnable() {
                     @Override
                     public void run() {
                         listener.onGeoQueryReady();
@@ -355,7 +359,7 @@ public class GeoQuery {
     /**
      * Removes an event listener.
      *
-     * @throws java.lang.IllegalArgumentException If the listener was removed already or never added
+     * @throws IllegalArgumentException If the listener was removed already or never added
      *
      * @param listener The listener to remove
      */

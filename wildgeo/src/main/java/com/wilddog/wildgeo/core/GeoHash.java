@@ -2,7 +2,6 @@ package com.wilddog.wildgeo.core;
 
 import com.wilddog.wildgeo.GeoLocation;
 import com.wilddog.wildgeo.util.Base32Utils;
-import com.wilddog.wildgeo.util.GeoUtils;
 
 public class GeoHash {
     private final String geoHash;

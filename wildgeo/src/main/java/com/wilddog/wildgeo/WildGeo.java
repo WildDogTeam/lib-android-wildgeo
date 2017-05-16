@@ -28,11 +28,15 @@
 
 package com.wilddog.wildgeo;
 
-import com.wilddog.client.*;
+import com.wilddog.client.DataSnapshot;
+import com.wilddog.client.SyncError;
+import com.wilddog.client.SyncReference;
+import com.wilddog.client.ValueEventListener;
 import com.wilddog.wildgeo.core.GeoHash;
-import com.wilddog.wildgeo.util.GeoUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A WildGeo instance is used to store geo location data in Wilddog.
@@ -49,7 +53,7 @@ public class WildGeo {
          * @param key The key whose location was saved
          * @param error The error or null if no error occurred
          */
-        public void onComplete(String key, WilddogError error);
+        public void onComplete(String key, SyncError error);
     }
 
     /**
@@ -73,14 +77,14 @@ public class WildGeo {
                     this.callback.onLocationResult(dataSnapshot.getKey(), location);
                 } else {
                     String message = "WildGeo data has invalid format: " + dataSnapshot.getValue();
-                    this.callback.onCancelled(new WilddogError(WilddogError.UNKNOWN_ERROR, message));
+                    this.callback.onCancelled(SyncError.fromException(new Throwable(message)));
                 }
             }
         }
 
         @Override
-        public void onCancelled(WilddogError wilddogError) {
-            this.callback.onCancelled(wilddogError);
+        public void onCancelled(SyncError syncError) {
+            this.callback.onCancelled(syncError);
         }
     }
 
@@ -97,8 +101,6 @@ public class WildGeo {
             } else {
                 return null;
             }
-        } catch (WilddogException e) {
-            return null;
         } catch (NullPointerException e) {
             return null;
         } catch (ClassCastException e) {
@@ -106,25 +108,33 @@ public class WildGeo {
         }
     }
 
-    private final Wilddog wilddog;
+    private final SyncReference syncReference;
+    private final EventRaiser eventRaiser;
 
     /**
      * Creates a new WildGeo instance at the given Wilddog reference.
-     * @param wilddog The Wilddog reference this WildGeo instance uses
+     * @param syncReference The Wilddog reference this WildGeo instance uses
      */
-    public WildGeo(Wilddog wilddog) {
-        this.wilddog = wilddog;
+    public WildGeo(SyncReference syncReference) {
+        this.syncReference = syncReference;
+        EventRaiser eventRaiser;
+        try {
+            eventRaiser = new AndroidEventRaiser();
+        } catch (Throwable e) {
+            throw new RuntimeException("This sdk needs Android environment.");
+        }
+        this.eventRaiser = eventRaiser;
     }
 
     /**
      * @return The Wilddog reference this WildGeo instance uses
      */
-    public Wilddog getWilddog() {
-        return this.wilddog;
+    public SyncReference getSyncReference() {
+        return this.syncReference;
     }
 
-    Wilddog wilddogRefForKey(String key) {
-        return this.wilddog.child(key);
+    SyncReference wilddogRefForKey(String key) {
+        return this.syncReference.child(key);
     }
 
     /**
@@ -147,15 +157,15 @@ public class WildGeo {
         if (key == null) {
             throw new NullPointerException();
         }
-        Wilddog keyRef = this.wilddogRefForKey(key);
+        SyncReference keyRef = this.wilddogRefForKey(key);
         GeoHash geoHash = new GeoHash(location);
         Map<String, Object> updates = new HashMap<String, Object>();
         updates.put("g", geoHash.getGeoHashString());
         updates.put("l", new double[]{location.latitude, location.longitude});
         if (completionListener != null) {
-            keyRef.setValue(updates, geoHash.getGeoHashString(), new Wilddog.CompletionListener() {
+            keyRef.setValue(updates, geoHash.getGeoHashString(), new SyncReference.CompletionListener() {
                 @Override
-                public void onComplete(WilddogError error, Wilddog wilddog) {
+                public void onComplete(SyncError error, SyncReference syncReference) {
                     if (completionListener != null) {
                         completionListener.onComplete(key, error);
                     }
@@ -184,11 +194,11 @@ public class WildGeo {
         if (key == null) {
             throw new NullPointerException();
         }
-        Wilddog keyRef = this.wilddogRefForKey(key);
+        SyncReference keyRef = this.wilddogRefForKey(key);
         if (completionListener != null) {
-            keyRef.setValue(null, new Wilddog.CompletionListener() {
+            keyRef.setValue(null, new SyncReference.CompletionListener() {
                 @Override
-                public void onComplete(WilddogError error, Wilddog wilddog) {
+                public void onComplete(SyncError error, SyncReference wilddog) {
                     completionListener.onComplete(key, error);
                 }
             });
@@ -204,7 +214,7 @@ public class WildGeo {
      * @param callback The callback that is called once the location is retrieved
      */
     public void getLocation(String key, LocationCallback callback) {
-        Wilddog keyWilddog = this.wilddogRefForKey(key);
+        SyncReference keyWilddog = this.wilddogRefForKey(key);
         LocationValueEventListener valueListener = new LocationValueEventListener(callback);
         keyWilddog.addListenerForSingleValueEvent(valueListener);
     }
@@ -217,5 +227,9 @@ public class WildGeo {
      */
     public GeoQuery queryAtLocation(GeoLocation center, double radius) {
         return new GeoQuery(this, center, radius);
+    }
+
+    void raiseEvent(Runnable r) {
+        this.eventRaiser.raiseEvent(r);
     }
 }
