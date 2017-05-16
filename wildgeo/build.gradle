@@ -1,5 +1,4 @@
 apply plugin: 'java'
-apply plugin: 'maven-publish'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
@@ -10,14 +9,5 @@ dependencies {
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId 'com.wilddog'
-            artifactId 'wildgeo'
-            version '1.0.0'
 
-            from components.java
-        }
-    }
-}
+apply from: 'maven_push_java.gradle'

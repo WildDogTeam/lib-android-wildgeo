@@ -1,0 +1,105 @@
+/*
+ * Publish to local maven repository. Run command:
+ * gradle publishToMavenLocal
+ */
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId POM_GROUP_ID
+            artifactId POM_ARTIFACT_ID
+            version POM_VERSION
+
+            from components.java
+        }
+    }
+}
+
+
+/**
+ * Publish to maven central.
+ * Preparation:
+ * Update your home gradle.properties.   ~/.gradle/gradle.properties
+ *
+        NEXUS_USERNAME=yourusername
+        NEXUS_PASSWORD=yourpassword
+        signing.keyId=your key id like ABCDEF12
+        signing.password=yourpassword
+        signing.secretKeyRingFile=~/.gnupg/secring.gpg
+ *
+ * These configuration should not commit to your version control system, so goes there.
+ *
+ * Run command:
+ * gradle clean build uploadArchives
+ */
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            pom.groupId = POM_GROUP_ID
+            pom.artifactId = POM_ARTIFACT_ID
+            pom.version = POM_VERSION
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: NEXUS_USERNAME, password: NEXUS_PASSWORD)
+            }
+
+            pom.project {
+                name POM_NAME
+                packaging POM_PACKAGING
+                description POM_DESCRIPTION
+                url POM_URL
+
+                scm {
+                    url POM_SCM_URL
+                    connection POM_SCM_CONNECTION
+                    developerConnection POM_SCM_DEV_CONNECTION
+                }
+
+                licenses {
+                    license {
+                        name POM_LICENCE_NAME
+                        url POM_LICENCE_URL
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id POM_DEVELOPER_ID
+                        name POM_DEVELOPER_NAME
+                    }
+                }
+            }
+        }
+    }
+}
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javaDocs(type: Javadoc) {
+    source = sourceSets.main.allJava
+}
+
+task javaDocJar(type: Jar, dependsOn: javaDocs) {
+    classifier = 'javadoc'
+    from javaDocs.destinationDir
+}
+
+artifacts {
+    archives sourceJar
+    archives javaDocJar
+}
+
+signing {
+    required { gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
